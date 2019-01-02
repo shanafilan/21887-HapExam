@@ -1,0 +1,639 @@
+<#include "../include/header.html">
+
+    <script src="${base.contextPath}/common/code?orderStatusData=HAP_OM_ORDER_STATUS" type="text/javascript"></script>
+    <script src="${base.contextPath}/lib/assets/global/plugins/amcharts/amcharts/plugins/export/libs/jszip/jszip.js"></script>
+    <script type="text/javascript">
+
+        var detailExportPromises = [];
+
+        var viewModel = Hap.createGridViewModel("#grid", {
+            exportFlag: true,
+            exportExcel: function() {
+                if(!viewModel.exportFlag){
+                    return false;
+                }
+                viewModel.exportFlag = false;
+                var gridDataSource;
+                //所有订单头信息数据源
+                gridDataSource = new kendo.data.DataSource({
+                    transport: {
+                        read: {
+                            url: BaseUrl + "/order/headers/query/all",
+                            type: "POST",
+                            dataType: "json"
+                        },
+                        parameterMap: function (options, type) {
+                            //带上查询条件
+                            return Hap.prepareQueryParameter(viewModel.model.toJSON(), options)
+                        }
+                    },
+                    schema: {
+                        data: 'rows',
+                        total: 'total'
+                    }
+                });
+
+                //所有订单行信息数据源
+                var lineDataSource = new kendo.data.DataSource({
+                    transport: {
+                        read: {
+                            url: BaseUrl + "/order/lines/query/all",
+                            type: "POST",
+                            dataType: "json"
+                        }
+                    },
+                    batch: true,
+                    serverFiltering: false,
+                    schema: {
+                        data: 'rows',
+                        total: 'total'
+                    }
+                });
+
+                //先加载主数据
+                gridDataSource.fetch().then(function () {
+                    var datas = gridDataSource.data();
+                    for(var i in datas){
+                        for(var k in orderStatusData){
+                            if(datas[i].orderStatus === orderStatusData[k].value){
+                                datas[i].orderStatusMean = orderStatusData[k].meaning;
+                                break;
+                            }
+                        }
+                    }
+                    //加载行数据
+                    lineDataSource.fetch().then(function () {
+
+                        if(gridDataSource.data().length === 0){
+                            kendo.ui.showInfoDialog({
+                                message: "No Data"
+                            });
+                            return false;
+                        }
+
+                        //主标题
+                        var mainTitles = [
+                            '<@spring.message "OrderHeader.saleOrderNumber"/>',
+                            '<@spring.message "company.companyName"/>',
+                            '<@spring.message "customer.customerName"/>',
+                            '<@spring.message "OrderHeader.orderDate"/>',
+                            '<@spring.message "OrderHeader.orderStatus"/>',
+                            '<@spring.message "OrderHeader.totalAmount"/>'
+                        ];
+                        //子标题
+                        var subTitles = [
+                            '<@spring.message "OrderLine.lineNumber"/>',
+                            '<@spring.message "InventoryItem.itemCode"/>',
+                            '<@spring.message "InventoryItem.itemDescription"/>',
+                            '<@spring.message "InventoryItem.itemUom"/>',
+                            '<@spring.message "OrderLine.orderdQuantity"/>',
+                            '<@spring.message "OrderLine.unitSellingPrice"/>',
+                            '<@spring.message "OrderLine.totalAmount"/>'
+                        ];
+
+                        //主表头
+                        var mainHeader = [];
+                        for(var i in mainTitles){
+                            mainHeader.push({
+                                value: mainTitles[i],
+                                background: '#A4A4A4',
+                                color: '#FFF',
+                                textAlign: 'center',
+                                verticalAlign: 'center',
+                                borderLeft: {size: 1 },
+                                borderRight: {size: 1 },
+                                borderBottom: { size: 1 },
+                                borderTop: { size: 1 },
+                            })
+                        }
+                        //子表头
+                        var subHeader = [];
+                        subHeader.push({
+                            value: ''
+                        });
+                        for(var i in subTitles){
+                            subHeader.push({
+                                value: subTitles[i],
+                                background: '#E5E3E3',
+                                color: '#383838',
+                                textAlign: 'center',
+                                verticalAlign: 'center'
+                            })
+                        }
+
+                        //列数
+                        var cellLength = Math.max(mainHeader.length, subHeader.length);
+
+                        //一个空行
+                        var spaceCells = [];
+                        for(var i=0;i < cellLength;i++){
+                            spaceCells.push({value: ''})
+                        }
+                        var spaceRow = {cells: spaceCells};
+
+                        //主行数据
+                        var mainRows = [];
+                        mainRows.push({
+                            cells: mainHeader,
+                            height: 30
+                        });
+
+                        //获取订单头数据
+                        var mainData = gridDataSource.data();
+
+                        for(var i=0;i < mainData.length;i++){
+                            //添加一行主数据
+                            mainRows.push({
+                                cells: [
+                                    { value: mainData[i].orderNumber, verticalAlign: 'center', background: '#FFF19E' },
+                                    { value: mainData[i].companyName, verticalAlign: 'center', background: '#FFF19E' },
+                                    { value: mainData[i].customerName, verticalAlign: 'center', background: '#FFF19E' },
+                                    { value: mainData[i].orderDate, verticalAlign: 'center', background: '#FFF19E' },
+                                    { value: mainData[i].orderStatusMean, verticalAlign: 'center', background: '#FFF19E' },
+                                    { value: mainData[i].orderTotalAmount, verticalAlign: 'center', background: '#FFF19E', bold: true }
+                                ],
+                                height: 28
+                            });
+
+                            var subRows = [];
+                            //添加子标题
+                            subRows.push({
+                                cells: subHeader
+                            });
+                            //过滤数据
+                            lineDataSource.filter({
+                                field: 'headerId',
+                                operator: 'eq',
+                                value: mainData[i].headerId
+                            });
+                            //获取过滤后的数据
+                            var subData = lineDataSource.view();
+                            for(var k=0;k < subData.length;k++){
+                                //添加子行数据
+                                subRows.push({
+                                    cells: [
+                                        { value: '' },
+                                        { value: subData[k].lineNumber },
+                                        { value: subData[k].inventoryItemCode },
+                                        { value: subData[k].inventoryItemDescription },
+                                        { value: subData[k].orderQuantityUom },
+                                        { value: subData[k].orderdQuantity },
+                                        { value: subData[k].unitSellingPrice },
+                                        { value: subData[k].totalAmount }
+                                    ]
+                                })
+                            }
+                            //添加空行
+                            subRows.push(spaceRow);
+
+                            //添加到主行
+                            for(var s in subRows){
+                                mainRows.push(subRows[s]);
+                            }
+                        }
+
+                        var columns = [];
+                        //列样式
+                        for(var i=0;i < cellLength;i++){
+                            columns.push({ width: 150 });
+                        }
+                        var workbook = new kendo.ooxml.Workbook({
+                            creator: 'jiangzhou.bo@hand-chian.com',
+                            date: new Date(),
+                            sheets: [
+                                {
+                                    name: '<@spring.message "orderheader.title" />',
+                                    frozenRows: 1, //冻结第一行
+                                    columns: columns,
+                                    rows: mainRows
+                                }
+                            ]
+                        });
+
+                        //导出到excel
+                        kendo.saveAs({
+                            dataURI: workbook.toDataURL(),
+                            fileName: '<@spring.message "orderheader.title" />'
+                        });
+
+                        viewModel.exportFlag = true;
+                    });
+                });
+            }
+        });
+
+
+    </script>
+
+    <style>
+        .col-md-width {
+            width: 200px;
+        }
+        .input-width {
+            width: 170px;
+        }
+    </style>
+
+    <body>
+
+    <div class="tab-pane">
+        <div id="page-content">
+            <div id="form-content">
+                <form class="form-horizontal" id="query-form">
+                    <div class="form-group" style="margin:10px 0px 0px 0px;">
+
+                        <label class="col-md-1 control-label text-right">
+                            <@spring.message "company.companyName"/>
+                        </label>
+                        <div class="col-md-1 col-md-width" >
+                            <div>
+                                <input id="companyId" name="companyId" class="input-width"
+                                       data-label="<@spring.message 'company.companyName'/>"
+                                       data-bind="value:model.companyId, text:model.companyName"/>
+                                <script>
+                                    $("#companyId").kendoLov($.extend(${lovProvider.getLov(base.contextPath, base.locale, "LOV_EXAM_COMPANY")}, {
+                                            query: function (e) {
+                                                e.param['enabledFlag'] = 'Y';
+                                            },
+                                            change: function () {
+                                                viewModel.model.set('customerId', null);
+                                            }
+                                        }
+                                    ));
+                                </script>
+                            </div>
+                        </div>
+
+                        <label class="col-md-1 control-label text-right">
+                            <@spring.message "customer.customerName"/>
+                        </label>
+                        <div class="col-md-1 col-md-width">
+                            <input id="customerId" name="customerId" class="input-width"
+                                   data-bind="value:model.customerId, text: model.customerName"
+                                   data-label="<@spring.message 'customer.customerName'/>"/>
+                            <script>
+                                $("#customerId").kendoLov($.extend(${lovProvider.getLov(base.contextPath, base.locale, "LOV_EXAM_CUSTOMER")}, {
+                                        query: function (e) {
+                                            e.param['enabledFlag'] = 'Y';
+                                            var companyLov = $('#companyId').data('kendoLov');
+                                            if(companyLov.value()){
+                                                e.param['companyId'] = companyLov.value();
+                                            }
+                                        }
+                                    }
+                                ));
+                            </script>
+                        </div>
+
+                        <label class="col-md-1 control-label text-right">
+                            <@spring.message "OrderHeader.saleOrderNumber"/>
+                        </label>
+                        <div class="col-md-1 col-md-width">
+                            <input id="orderNumber" name="orderNumber" class="k-textbox input-width" maxlength="60"
+                                   data-bind="value:model.orderNumber"
+                                   data-label="<@spring.message 'OrderHeader.saleOrderNumber'/>"/>
+                        </div>
+                    </div>
+
+                    <div class="form-group" style="margin:10px 0px 0px 0px;">
+
+                        <label class="col-md-1 control-label text-right">
+                            <@spring.message "InventoryItem.itemDescription"/>
+                        </label>
+                        <div class="col-md-1 col-md-width">
+                            <input id="inventoryItemId" name="inventoryItemId" class="input-width"
+                                   data-bind="value:model.inventoryItemId"
+                                   data-label="<@spring.message 'InventoryItem.itemDescription'/>"/>
+                            <script>
+                                $("#inventoryItemId").kendoLov($.extend(${lovProvider.getLov(base.contextPath, base.locale, "LOV_EXAM_INVENTORY")}, {
+                                        query: function (e) {
+                                            e.param['enabledFlag'] = 'Y';
+                                        }
+                                    }
+                                ));
+                            </script>
+                        </div>
+
+                        <label class="col-md-1 control-label text-right">
+                            <@spring.message "OrderHeader.orderStatus"/>
+                        </label>
+                        <div class="col-md-1 col-md-width">
+                            <input id="orderStatus" name="orderStatus" class="input-width"
+                                   data-bind="value:model.orderStatus"
+                                   data-label="<@spring.message 'OrderHeader.orderStatus'/>">
+                            <script>
+                                $("#orderStatus").kendoDropDownList({
+                                    dataSource: orderStatusData,
+                                    valuePrimitive: true,
+                                    dataTextField: "meaning",
+                                    dataValueField: "value"
+                                });
+                            </script>
+                        </div>
+                    </div>
+
+                    <div class="form-group" style="margin:10px 0px 20px 0px;">
+                        <div style="margin-left: 40px;">
+                            <div class="col-md-6">
+                        <span class="btn btn-info pull-left" style="margin-right: 5px;"
+                              data-bind="click:query" type="submit">
+                            <i class="fa fa-search" style="margin-right:3px;"></i><@spring.message "hap.query"/>
+                        </span>
+                                <span class="btn btn-default pull-left" style="margin-right: 5px;"
+                                      data-bind="click:reset">
+                            <i class="fa fa fa-eraser" style="margin-right:3px;"></i><@spring.message "hap.reset"/>
+                        </span>
+                                <span class="btn btn-success pull-left" data-bind="click:exportExcel">
+                            <i class="fa fa-file-excel-o" style="margin-right:3px;"></i><@spring.message "hap.exportExcel"/>
+                        </span>
+                            </div>
+                        </div>
+                    </div>
+                </form>
+            </div>
+
+            <script>kendo.bind($('#query-form'), viewModel);</script>
+            <div style="clear:both">
+                <div id="grid"></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        /*var tabstrip = $("#tabstrip").kendoTabStrip({
+         height: '100%',
+         animation: false
+         }).data("kendoTabStrip");
+         //关闭tab页
+         tabstrip.tabGroup.on("click", ".k-i-close", function (e) {
+         e.preventDefault();
+         e.stopPropagation();
+         var item = $(e.target).closest(".k-item");
+         var prev = item.next().length ? item.next() : item.prev();
+
+         //            var id = $(item).attr('aria-controls');
+         //            $(item).remove();
+         //            $('#'+id).remove();
+
+         //            var tabid = $(item).find('span.k-link').attr('data-tabid');
+         tabstrip.closeTab(1);
+         //            tabstrip.remove(item);
+         tabstrip.select(prev);
+         });*/
+    </script>
+
+    <script type="text/javascript">
+        //初始化回车查询
+        Hap.initEnterQuery('#query-form', viewModel.query);
+
+        var BaseUrl = _basePath;
+        var dataSource = new kendo.data.DataSource({
+            transport: {
+                read: {
+                    url: BaseUrl + "/order/headers/query",
+                    type: "POST",
+                    dataType: "json"
+                },
+                update: {
+                    url: BaseUrl + "/order/headers/submit",
+                    type: "POST",
+                    contentType: "application/json"
+                },
+                destroy: {
+                    url: BaseUrl + "/order/headers/remove",
+                    type: "POST",
+                    contentType: "application/json"
+                },
+                create: {
+                    url: BaseUrl + "/order/headers/submit",
+                    type: "POST",
+                    contentType: "application/json"
+                },
+                parameterMap: function (options, type) {
+                    if (type !== "read" && options.models) {
+                        var datas = Hap.prepareSubmitParameter(options, type)
+                        return kendo.stringify(datas);
+                    } else if (type === "read") {
+                        return Hap.prepareQueryParameter(viewModel.model.toJSON(), options)
+                    }
+                }
+            },
+            batch: true,
+            serverPaging: true,
+            pageSize: 5,
+            schema: {
+                data: 'rows',
+                total: 'total',
+                model: {
+                    id: "headerId",
+                    fields: {}
+                }
+            }
+        });
+
+        $("#grid").kendoGrid({
+            dataSource: dataSource,
+            resizable: true,
+            scrollable: false,
+            navigatable: false,
+            selectable: 'multiple, rowbox',
+            editable: false,
+            detailInit: detailInit, //显示数据详细信息
+            pageable: {
+                pageSizes: [5, 10, 20, 50],
+                refresh: true,
+                buttonCount: 5
+            },
+            dataBound: function() {
+                this.expandRow(this.tbody.find("tr.k-master-row").first());
+            },
+            toolbar: [
+                {
+                    template: '<span id="tb-add" class=" btn btn-primary"><i class="fa fa-plus" aria-hidden="true"></i><@spring.message "exam.add"/></span>'
+                }
+            ],
+            columns: [
+                {
+                    field: "headerId",
+                    title: '<@spring.message "OrderHeader.headerId"/>',
+                    width: 120,
+                    hidden: true
+                },
+                {
+                    field: "orderNumber",
+                    title: '<@spring.message "OrderHeader.saleOrderNumber"/>',
+                    width: 120,
+                    template: function (dataItem) {
+                        return '<a style="color: blue;text-decoration: underline" href="javascript:void(0);" onclick="openTask(\''+dataItem.headerId+'\''+',\''+dataItem.orderNumber+'\')" >'+dataItem.orderNumber+'</a>';
+                    }
+                },
+                {
+                    field: "companyName",
+                    title: '<@spring.message "company.companyName"/>',
+                    width: 120
+                },
+                {
+                    field: "customerName",
+                    title: '<@spring.message "customer.customerName"/>',
+                    width: 120
+                },
+                {
+                    field: "orderDate",
+                    title: '<@spring.message "OrderHeader.orderDate"/>',
+                    width: 120
+                },
+                {
+                    field: "orderStatus",
+                    title: '<@spring.message "OrderHeader.orderStatus"/>',
+                    width: 120,
+                    template: function (dataItem) {
+                        for(var i in orderStatusData){
+                            if(orderStatusData[i].value === dataItem.orderStatus){
+                                return orderStatusData[i].meaning;
+                            }
+                        }
+                        return ''
+                    }
+                },
+                {
+                    field: "orderTotalAmount",
+                    title: '<@spring.message "OrderHeader.totalAmount"/>',
+                    width: 120
+                },
+            ]
+        });
+
+        // 新增 按钮
+        $("#tb-add").click(function () {
+            //先关闭新增标签，初始化
+            parent.closeTab('tab0');
+            openTask('0','<@spring.message "orderheader.neworder" />', '${base.contextPath}/exam/order_line.html', true);
+        });
+
+        /*
+         * 打开一个新标签页
+         */
+        function openTask(headerId, orderNumber){
+            parent.openTab('tab'+headerId, orderNumber, '${base.contextPath}/exam/order_line.html?headerId='+headerId+'');
+        }
+
+        /*function closeTab(id, reload){
+         tabstrip.closeTab(id);
+         if(reload){
+         dataSource.read();
+         }
+         }*/
+
+        /*function _openTab (id, title, url, closeIcon) {
+         //查询当前tab中是否已存在该tab页
+
+         var items = tabstrip.tabGroup.children('li.k-item');
+         var index = -1;
+         for(var i=0;i < items.length;i++){
+         var span = $(items[i]).find('span[data-tabid='+id+']');
+         if(span && span.length !== 0){
+         index = $(items[i]).attr('aria-controls').split('-')[1];
+         }
+         }
+
+         if(index !== -1){
+         tabstrip.select(index-1);
+         } else{
+         tabstrip.insertAfter({
+         tabid: id,
+         text: title,
+         encoded: false,
+         closeIcon: closeIcon = closeIcon === undefined ? true : closeIcon,
+         contentIframe: url  // url / contentUrl
+         }, tabstrip.tabGroup.children('li:last'));
+
+         // ********* 生成的iframe的id为iframe_id
+
+         $("#iframe_"+id+'').css('min-height', '650px');
+
+         tabstrip.select(tabstrip.tabGroup.children('li:last'));
+         }
+         }*/
+
+        /**
+         * 详细表格
+         */
+        function detailInit(e) {
+            $("<div><div/>").appendTo(e.detailCell).kendoGrid({
+                dataSource: {
+                    transport: {
+                        read: {
+                            url: BaseUrl + "/order/lines/query",
+                            type: "POST",
+                            dataType: "json"
+                        },
+                        parameterMap: function (options, type) {
+                            return {
+                                "headerId": e.data.headerId,
+                                page: options.page,
+                                pageSize: options.pageSize
+                            }
+                        }
+                    },
+                    batch: true,
+                    serverPaging: true,
+                    pageSize: 5,
+                    schema: {
+                        data: 'rows',
+                        total: 'total',
+                        model: {
+                            id: "lineId"
+                        }
+                    }
+                },
+                scrollable: false,
+                pageable: true,
+                editable: false,
+                columns: [
+                    {
+                        field: "lineNumber",
+                        title: '<@spring.message "OrderLine.lineNumber"/>',
+                        width: 40
+                    },
+                    {
+                        field: "inventoryItemCode",
+                        title: '<@spring.message "InventoryItem.itemCode"/>',
+                        width: 80
+                    },
+                    {
+                        field: "inventoryItemDescription",
+                        title: '<@spring.message "InventoryItem.itemDescription"/>',
+                        width: 80
+                    },
+                    {
+                        field: "orderQuantityUom",
+                        title: '<@spring.message "InventoryItem.itemUom"/>',
+                        width: 80
+                    },
+                    {
+                        field: "orderdQuantity",
+                        title: '<@spring.message "OrderLine.orderdQuantity"/>',
+                        width: 80
+                    },
+                    {
+                        field: "unitSellingPrice",
+                        title: '<@spring.message "OrderLine.unitSellingPrice"/>',
+                        width: 80
+                    },
+                    {
+                        field: "totalAmount",
+                        title: '<@spring.message "OrderLine.totalAmount"/>',
+                        width: 80
+                    },
+                    {
+                        field: "description",
+                        title: '<@spring.message "hap.comment"/>',
+                        width: 80
+                    }
+                ]
+            })
+        }
+
+    </script>
+    </body>
+    </html>

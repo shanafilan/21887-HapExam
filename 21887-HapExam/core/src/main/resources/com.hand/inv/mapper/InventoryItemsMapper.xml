@@ -12,6 +12,26 @@
         <result column="END_ACTIVE_DATE" property="endActiveDate" jdbcType="DATE" />
         <result column="ENABLED_FLAG" property="enabledFlag" jdbcType="VARCHAR" />
     </resultMap>
-
+    <select id="selectByItem" parameterType="com.hand.inv.dto.InventoryItems"
+            resultMap="BaseResultMap">
+        SELECT INVENTORY_ITEM_ID,ITEM_CODE,ITEM_UOM,ITEM_DESCRIPTION,ORDER_FLAG from hap_inv_inventory_items
+        <where>
+            <if test="inventoryItemId != null">
+                and INVENTORY_ITEM_ID = #{inventoryItemId,jdbcType=DECIMAL}
+            </if>
+            <if test="itemCode != null">
+                AND ITEM_CODE like #{itemCode,jdbcType=VARCHAR}
+            </if>
+            <if test="itemUom != null">
+                AND ITEM_UOM like #{itemUom,jdbcType=VARCHAR}
+            </if>
+            <if test="itemDescription != null">
+                AND ITEM_DESCRIPTION like #{itemDescription,jdbcType=VARCHAR}
+            </if>
+            <if test="orderFlag != null">
+                AND ORDER_FLAG like #{orderFlag,jdbcType=VARCHAR}
+            </if>
+        </where>
+    </select>
 
 </mapper>

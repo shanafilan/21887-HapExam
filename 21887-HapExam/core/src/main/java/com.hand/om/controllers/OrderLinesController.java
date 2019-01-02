@@ -16,13 +16,14 @@ import org.springframework.validation.BindingResult;
 import java.util.List;
 
     @Controller
+    @RequestMapping(value = "/hap/om/order/lines")
     public class OrderLinesController extends BaseController{
 
     @Autowired
     private IOrderLinesService service;
 
 
-    @RequestMapping(value = "/hap/om/order/lines/query")
+    @RequestMapping(value = "/query")
     @ResponseBody
     public ResponseData query(OrderLines dto, @RequestParam(defaultValue = DEFAULT_PAGE) int page,
         @RequestParam(defaultValue = DEFAULT_PAGE_SIZE) int pageSize, HttpServletRequest request) {
@@ -30,7 +31,14 @@ import java.util.List;
         return new ResponseData(service.select(requestContext,dto,page,pageSize));
     }
 
-    @RequestMapping(value = "/hap/om/order/lines/submit")
+    @RequestMapping(value = "/query/all")
+    @ResponseBody
+    public ResponseData queryAll(OrderLines orderLine, HttpServletRequest request) {
+        IRequest requestContext = createRequestContext(request);
+        return new ResponseData(service.selectOptions(requestContext, orderLine, null));
+    }
+
+    @RequestMapping(value = "/submit")
     @ResponseBody
     public ResponseData update(@RequestBody List<OrderLines> dto, BindingResult result, HttpServletRequest request){
         getValidator().validate(dto, result);
@@ -43,10 +51,17 @@ import java.util.List;
         return new ResponseData(service.batchUpdate(requestCtx, dto));
     }
 
-    @RequestMapping(value = "/hap/om/order/lines/remove")
+    @RequestMapping(value = "/remove")
     @ResponseBody
     public ResponseData delete(HttpServletRequest request,@RequestBody List<OrderLines> dto){
         service.batchDelete(dto);
         return new ResponseData();
+    }
+
+
+    @RequestMapping(value = "/maxline")
+    @ResponseBody
+    public Long selectMaxLineNumber(Long headerId){
+        return service.selectMaxLineNumber(headerId);
     }
     }

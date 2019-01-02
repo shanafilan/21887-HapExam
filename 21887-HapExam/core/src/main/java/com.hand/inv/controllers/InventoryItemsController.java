@@ -27,7 +27,7 @@ import java.util.List;
     public ResponseData query(InventoryItems dto, @RequestParam(defaultValue = DEFAULT_PAGE) int page,
         @RequestParam(defaultValue = DEFAULT_PAGE_SIZE) int pageSize, HttpServletRequest request) {
         IRequest requestContext = createRequestContext(request);
-        return new ResponseData(service.select(requestContext,dto,page,pageSize));
+        return new ResponseData(service.selectByItem(requestContext,dto,page,pageSize));
     }
 
     @RequestMapping(value = "/hap/inv/inventory/items/submit")

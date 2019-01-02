@@ -9,6 +9,9 @@ import javax.persistence.Table;
 import com.hand.hap.system.dto.BaseDTO;
 import javax.validation.constraints.NotNull;
 import org.hibernate.validator.constraints.NotEmpty;
+
+import java.math.BigDecimal;
+
 @ExtensionAttribute(disable=true)
 @Table(name = "hap_om_order_lines")
 public class OrderLines extends BaseDTO {
@@ -40,7 +43,7 @@ public class OrderLines extends BaseDTO {
      private Long lineNumber; //行号
 
      @NotNull
-     private Long inventoryItemId; //产品ID
+     private Long inventoryItemId; //物料ID
 
      @NotNull
      private Long orderdQuantity; //数量
@@ -73,7 +76,6 @@ public class OrderLines extends BaseDTO {
 
      @Length(max = 150)
      private String addition5; //附加信息5
-
 
      public void setLineId(Long lineId){
          this.lineId = lineId;
@@ -187,4 +189,4 @@ public class OrderLines extends BaseDTO {
          return addition5;
      }
 
-     }
+}

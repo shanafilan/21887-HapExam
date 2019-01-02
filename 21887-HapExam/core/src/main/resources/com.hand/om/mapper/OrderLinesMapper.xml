@@ -17,7 +17,18 @@
         <result column="ADDITION3" property="addition3" jdbcType="VARCHAR" />
         <result column="ADDITION4" property="addition4" jdbcType="VARCHAR" />
         <result column="ADDITION5" property="addition5" jdbcType="VARCHAR" />
-    </resultMap>
+        <!--<result column="INVENTORY_ITEM_CODE" property="inventoryItemCode" jdbcType="VARCHAR"/>
+        <result column="INVENTORY_ITEM_DESCRIPTION" property="inventoryItemDescription" jdbcType="VARCHAR"/>-->    </resultMap>
 
+    <sql id="Base_Column_List">
+        LINE_ID,HEADER_ID,LINE_NUMBER,INVENTORY_ITEM_ID,ORDERD_QUANTITY,ORDER_QUANTITY_UOM,UNIT_SELLING_PRICE,DESCRIPTION,COMPANY_ID,ADDITION1,ADDITION2,ADDITION3,ADDITION4,ADDITION5,
+    </sql>
 
+    <select id="selectMaxLineNumber" parameterType="Long" resultType="Long">
+        SELECT MAX(LINE_NUMBER) FROM hap_om_order_lines WHERE HEADER_ID=#{headerId}
+    </select>
+
+    <delete id="deleteByHeaderId" parameterType="Long">
+        DELETE FROM hap_om_order_lines WHERE HEADER_ID=#{headerId}
+    </delete>
 </mapper>

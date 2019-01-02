@@ -6,10 +6,50 @@
         <result column="HEADER_ID" property="headerId" jdbcType="DECIMAL" />
         <result column="ORDER_NUMBER" property="orderNumber" jdbcType="VARCHAR" />
         <result column="COMPANY_ID" property="companyId" jdbcType="DECIMAL" />
+        <result column="COMPANY_NUMBER" property="companyNumber" jdbcType="VARCHAR"/>
+        <result column="COMPANY_NAME" property="companyName" jdbcType="VARCHAR"/>
         <result column="ORDER_DATE" property="orderDate" jdbcType="DATE" />
         <result column="ORDER_STATUS" property="orderStatus" jdbcType="VARCHAR" />
         <result column="CUSTOMER_ID" property="customerId" jdbcType="DECIMAL" />
+        <result column="CUSTOMER_NUMBER" property="customerNumber" jdbcType="VARCHAR"/>
+        <result column="CUSTOMER_NAME" property="customerName" jdbcType="VARCHAR"/>
+        <result column="INVENTORY_ITEM_ID" property="inventoryItemId" jdbcType="DECIMAL"/>
+        <result column="ORDER_TOTAL_AMOUNT" property="orderTotalAmount" jdbcType="DECIMAL"/>
     </resultMap>
+
+    <sql id="Base_column_list">
+        OH.HEADER_ID,OH.ORDER_NUMBER,OH.COMPANY_ID,OH.ORDER_DATE,OH.ORDER_STATUS,OH.CUSTOMER_ID,
+    </sql>
+
+    <select id="selectByCondition" resultMap="BaseResultMap" parameterType="com.hand.om.dto.OrderHeaders">
+      SELECT <include refid="Base_column_list"/>
+        OC.COMPANY_NUMBER,OC.COMPANY_NAME,AC.CUSTOMER_NUMBER,AC.CUSTOMER_NAME,INVENTORY_ITEM_ID,
+        SUM(OL.ORDERD_QUANTITY*OL.UNIT_SELLING_PRICE) ORDER_TOTAL_AMOUNT
+      FROM hap_om_order_headers OH
+      LEFT JOIN hap_om_order_lines OL ON OH.HEADER_ID = OL.HEADER_ID
+      LEFT JOIN hap_org_companys OC ON OH.COMPANY_ID = OC.COMPANY_ID
+      LEFT JOIN hap_ar_customers AC ON OH.CUSTOMER_ID = AC.CUSTOMER_ID
+      <where>
+          <if test="headerId != null">
+              AND OH.HEADER_ID = #{headerId}
+          </if>
+          <if test="orderNumber != null">
+              AND OH.ORDER_NUMBER Like CONCAT('%',#{orderNumber},'%')
+          </if>
+          <if test="companyId != null">
+              AND OH.COMPANY_ID = #{companyId}
+          </if>
+          <if test="customerId != null">
+              AND OH.CUSTOMER_ID = #{customerId}
+          </if>
+          <if test="orderStatus != null">
+              AND ORDER_STATUS = #{orderStatus}
+          </if>
+          <if test="inventoryItemId != null">
+              AND INVENTORY_ITEM_ID = #{inventoryItemId}
+          </if>
+      </where>
+    </select>
 
 
 </mapper>
