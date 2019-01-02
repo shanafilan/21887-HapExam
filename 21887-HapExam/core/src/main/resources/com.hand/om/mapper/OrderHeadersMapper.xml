@@ -24,8 +24,8 @@
     <select id="selectByCondition" resultMap="BaseResultMap" parameterType="com.hand.om.dto.OrderHeaders">
       SELECT <include refid="Base_column_list"/>
         OC.COMPANY_NUMBER,OC.COMPANY_NAME,AC.CUSTOMER_NUMBER,AC.CUSTOMER_NAME,INVENTORY_ITEM_ID,
-        SUM(OL.ORDERD_QUANTITY*OL.UNIT_SELLING_PRICE) ORDER_TOTAL_AMOUNT
-      FROM hap_om_order_headers OH
+        (SELECT SUM(OL.ORDERD_QUANTITY*OL.UNIT_SELLING_PRICE) FROM hap_om_order_lines OL WHERE OL.HEADER_ID = OH.HEADER_ID)ORDER_TOTAL_AMOUNT
+        FROM hap_om_order_headers OH
       LEFT JOIN hap_om_order_lines OL ON OH.HEADER_ID = OL.HEADER_ID
       LEFT JOIN hap_org_companys OC ON OH.COMPANY_ID = OC.COMPANY_ID
       LEFT JOIN hap_ar_customers AC ON OH.CUSTOMER_ID = AC.CUSTOMER_ID
