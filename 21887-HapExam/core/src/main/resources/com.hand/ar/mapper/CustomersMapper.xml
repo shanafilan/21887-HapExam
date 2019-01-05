@@ -10,5 +10,22 @@
         <result column="ENABLED_FLAG" property="enabledFlag" jdbcType="VARCHAR" />
     </resultMap>
 
+    <select id="selctByCompany" parameterType="com.hand.ar.dto.Customers" resultMap="BaseResultMap">
+        SELECT CUSTOMER_ID,CUSTOMER_NUMBER,CUSTOMER_NAME,COMPANY_ID,ENABLED_FLAG FROM hap_ar_customers
+        <where>
+            <if test="customerId!=null">
+                CUSTOMER_ID = #{customerId}
+            </if>
+            <if test="customerNumber!=null">
+                CUSTOMER_NUMBER Like CONCAT('%',#{customerNumber},'%')
+            </if>
+            <if test="customerName!=null">
+                CUSTOMER_NAME Like CONCAT('%',#{customerName},'%')
+            </if>
+            <if test="companyId!=null">
+                COMPANY_ID = #{companyId}
+            </if>
+        </where>
 
+    </select>
 </mapper>

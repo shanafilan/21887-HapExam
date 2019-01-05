@@ -8,6 +8,22 @@
         <result column="COMPANY_NAME" property="companyName" jdbcType="VARCHAR" />
         <result column="ENABLED_FLAG" property="enabledFlag" jdbcType="VARCHAR" />
     </resultMap>
-
+    <select id="selectByCompany" parameterType="com.hand.org.dto.Companys" resultMap="BaseResultMap">
+        SELECT COMPANY_ID,COMPANY_NUMBER,COMPANY_NAME,ENABLED_FLAG FROM hap_org_companys
+        <where>
+            <if test="companyId!=null">
+                COMPANY_ID = #{companyId}
+            </if>
+            <if test="companyNumber!=null">
+                COMPANY_NUMBER Like CONCAT('%',#{companyNumber},'%')
+            </if>
+            <if test="companyName!=null">
+                COMPANY_NAME Like CONCAT('%',#{companyName},'%')
+            </if>
+            <!--<if test="enabledFlag!=null">
+                ENABLED_FLAG = #{enabledFlag}
+            </if>-->
+        </where>
+    </select>
 
 </mapper>

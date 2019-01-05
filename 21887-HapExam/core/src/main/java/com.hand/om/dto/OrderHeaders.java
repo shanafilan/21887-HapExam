@@ -12,6 +12,7 @@ import com.hand.hap.system.dto.BaseDTO;
 
 import java.math.BigDecimal;
 import java.util.Date;
+import javax.persistence.Transient;
 import javax.validation.constraints.NotNull;
 import org.hibernate.validator.constraints.NotEmpty;
 @ExtensionAttribute(disable=true)
@@ -41,7 +42,9 @@ public class OrderHeaders extends BaseDTO {
 
      @NotNull
      private Long companyId; //公司ID
+     @Transient
      private String companyNumber; //公司编码
+     @Transient
      private String companyName; //公司名称
 
      @JsonFormat(pattern = "yyyy-MM-dd")
@@ -53,9 +56,14 @@ public class OrderHeaders extends BaseDTO {
 
      @NotNull
      private Long customerId; //客户ID
+
+     @Transient
      private String customerNumber; //客户编号
+     @Transient
      private String customerName;  //客户姓名
+     @Transient
      private Long inventoryItemId;  //物料ID
+     @Transient
      private BigDecimal orderTotalAmount; //订单总金额
 
      public void setHeaderId(Long headerId){

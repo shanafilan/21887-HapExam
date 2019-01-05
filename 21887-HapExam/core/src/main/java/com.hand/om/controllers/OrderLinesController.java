@@ -28,7 +28,7 @@ import java.util.List;
     public ResponseData query(OrderLines dto, @RequestParam(defaultValue = DEFAULT_PAGE) int page,
         @RequestParam(defaultValue = DEFAULT_PAGE_SIZE) int pageSize, HttpServletRequest request) {
         IRequest requestContext = createRequestContext(request);
-        return new ResponseData(service.select(requestContext,dto,page,pageSize));
+        return new ResponseData(service.selectByLines(requestContext,dto,page,pageSize));
     }
 
     @RequestMapping(value = "/query/all")
@@ -41,6 +41,7 @@ import java.util.List;
     @RequestMapping(value = "/submit")
     @ResponseBody
     public ResponseData update(@RequestBody List<OrderLines> dto, BindingResult result, HttpServletRequest request){
+
         getValidator().validate(dto, result);
         if (result.hasErrors()) {
         ResponseData responseData = new ResponseData(false);
@@ -58,6 +59,11 @@ import java.util.List;
         return new ResponseData();
     }
 
+    @RequestMapping(value = "/nextline")
+    @ResponseBody
+    public Long selectNextLineId(){
+            return service.selectNextLineId();
+    }
 
     @RequestMapping(value = "/maxline")
     @ResponseBody

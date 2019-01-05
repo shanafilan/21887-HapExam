@@ -4,13 +4,18 @@ package com.hand.om.dto;
 import javax.persistence.GeneratedValue;
 import javax.persistence.Id;
 import com.hand.hap.mybatis.annotation.ExtensionAttribute;
+import com.hand.hap.mybatis.common.query.JoinColumn;
+import com.hand.inv.dto.InventoryItems;
 import org.hibernate.validator.constraints.Length;
 import javax.persistence.Table;
 import com.hand.hap.system.dto.BaseDTO;
+
+import javax.persistence.Transient;
 import javax.validation.constraints.NotNull;
 import org.hibernate.validator.constraints.NotEmpty;
 
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 
 @ExtensionAttribute(disable=true)
 @Table(name = "hap_om_order_lines")
@@ -53,7 +58,7 @@ public class OrderLines extends BaseDTO {
      private String orderQuantityUom; //产品单位
 
      @NotNull
-     private Long unitSellingPrice; //销售单价
+     private Double unitSellingPrice; //销售单价
 
      @NotEmpty
      @Length(max = 240)
@@ -76,6 +81,18 @@ public class OrderLines extends BaseDTO {
 
      @Length(max = 150)
      private String addition5; //附加信息5
+
+    @Transient
+    @JoinColumn(joinName = "inventoryJoin", field = InventoryItems.FIELD_ITEM_CODE)
+    private String itemCode; //物料编码
+
+    @Transient
+    @JoinColumn(joinName = "inventoryJoin", field = InventoryItems.FIELD_ITEM_DESCRIPTION)
+    private String itemDescription; //物料描述
+
+    @Transient
+    private Double totalAmount; //总金额
+
 
      public void setLineId(Long lineId){
          this.lineId = lineId;
@@ -125,20 +142,20 @@ public class OrderLines extends BaseDTO {
          return orderQuantityUom;
      }
 
-     public void setUnitSellingPrice(Long unitSellingPrice){
-         this.unitSellingPrice = unitSellingPrice;
-     }
-
-     public Long getUnitSellingPrice(){
-         return unitSellingPrice;
-     }
-
-     public void setDescription(String description){
-         this.description = description;
-     }
-
      public String getDescription(){
          return description;
+     }
+
+    public Double getUnitSellingPrice() {
+        return unitSellingPrice;
+    }
+
+    public void setUnitSellingPrice(Double unitSellingPrice) {
+        this.unitSellingPrice = unitSellingPrice;
+    }
+
+    public void setDescription(String description) {
+        this.description = description;
      }
 
      public void setCompanyId(Long companyId){
@@ -189,4 +206,33 @@ public class OrderLines extends BaseDTO {
          return addition5;
      }
 
+     public String getItemCode() {
+        return itemCode;
+    }
+
+     public void setItemCode(String itemCode) {
+        this.itemCode = itemCode;
+    }
+
+     public String getItemDescription() {
+        return itemDescription;
+    }
+
+     public void setItemDescription(String itemDescription) {
+        this.itemDescription = itemDescription;
+    }
+
+     public Double getTotalAmount() {
+        if(this.orderdQuantity != null && this.unitSellingPrice != null){
+            //格式化成两位小数
+            BigDecimal bd = new BigDecimal(this.orderdQuantity * this.unitSellingPrice);
+            bd = bd.setScale(2, RoundingMode.HALF_UP);
+            return Double.parseDouble(bd.toString());
+        }
+        return 0.00;
+     }
+
+     public void setTotalAmount(Double totalAmount) {
+        this.totalAmount = totalAmount;
+    }
 }

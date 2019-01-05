@@ -7,4 +7,5 @@ import java.util.List;
 
 public interface OrderHeadersMapper extends Mapper<OrderHeaders>{
     List<OrderHeaders> selectByCondition(OrderHeaders orderHeaders);
+
 }

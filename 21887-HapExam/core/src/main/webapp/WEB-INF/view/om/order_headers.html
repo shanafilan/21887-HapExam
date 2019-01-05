@@ -1,36 +1,40 @@
 <#include "../include/header.html">
 <body>
 <script src="${base.contextPath}/common/code?statusType=HAP_OM_ORDER_STATUS"></script>
+<div id="editWin"></div>
 <div id="page-content">
     <div id="form-content" style="overflow:auto;margin: 10px 0 20px 40px;">
         <div class="form-group" >
-            <label class="col-md-1 text-right control-label" for="companyId"><@spring.message "org.companyName"/></label>
-            <div class="col-md-2">
-                <input id="companyId" name="companyId" class="input-width" type="text" style="width:170px;margin-right:5px;"
+            <label class="col-md-1 control-label text-right" for="companyId">
+                <@spring.message "org.companyName"/>
+            </label>
+            <div class="col-md-2 col-md-width">
+                <input id="companyId" name="companyId" class="input-width" type="text"
                        data-bind="value:model.companyId, text:model.companyName"/>
             </div>
-            <label class="col-md-1 text-right control-label" for="customerId"><@spring.message "ar.customerName"/></label>
-            <div class="col-md-2">
-                <input id="customerId" name="customerId" class="input-width" style="width:170px;margin-right:5px;"
+            <label class="col-md-1 control-label text-right" for="customerId">
+                <@spring.message "ar.customerName"/></label>
+            <div class="col-md-2 col-md-width">
+                <input id="customerId" name="customerId" class="input-width"
                        data-bind="value:model.customerId, text:model.customerName"/>
             </div>
 
-            <label class="col-md-1 text-right control-label" for="orderNumber"><@spring.message "om.orderNumber"/></label>
-            <div class="col-md-2">
-                <input id="orderNumber" name="orderNumber" class="input-width" type="text" style="width:170px;margin-right:5px;"
+            <label class="col-md-2 control-label text-right" for="orderNumber"><@spring.message "om.orderNumber"/></label>
+            <div class="col-md-2 col-md-width">
+                <input id="orderNumber" name="orderNumber" class="k-textbox input-width" type="text"
                        data-bind="value:model.orderNumber"/>
             </div>
         </div>
         <div style="clear: both; height: 10px;"></div>
         <div class="form-group">
             <label class="col-md-1 text-right control-label" for="inventoryItemId"><@spring.message "inv.itemDescription"/></label>
-            <div class="col-md-2">
-                <input id="inventoryItemId" type="text" name="inventoryItemId" style="width:170px;margin-right:5px;"
+            <div class="col-md-2 col-md-width">
+                <input id="inventoryItemId" type="text" name="inventoryItemId"
                        data-bind="value:model.inventoryItemId"/>
             </div>
             <label class="col-md-1 text-right control-label" for="orderStatus"><@spring.message "om.orderStatus"/></label>
-            <div class="col-md-3">
-                <input id="orderStatus" type="text" name="orderStatus" style="width:170px;margin-right:5px;"
+            <div class="col-md-3 col-md-width">
+                <input id="orderStatus" type="text" name="orderStatus"
                        data-role="maskedtextbox" data-bind="value:model.orderStatus"/>
             </div>
         </div>
@@ -45,7 +49,7 @@
         <div id="grid"></div>
     </div>
 </div>
-<div id="editWin"></div>
+
 <script type="text/javascript">
     var viewModel = Hap.createGridViewModel("#grid");
     $("#orderStatus").kendoDropDownList({
@@ -105,6 +109,7 @@
         }
     });
 
+
     $("#grid").kendoGrid({
         dataSource: dataSource,
         resizable: true,
@@ -123,7 +128,7 @@
         },
         toolbar: [
             {
-                template: '<span class="btn btn-primary k-grid-add" style="float:left;margin-right:5px;" onclick="newCodeWindow()"><@spring.message "hap.new"/></span>'
+                template: '<span id="tb-add" class="btn btn-primary k-grid-add" style="float:left;margin-right:5px;" onclick="newCodeWindow()"><@spring.message "hap.new"/></span>'
             }
         ],
         columns: [
@@ -166,7 +171,17 @@
             {
                 field: "orderStatus",
                 title: '<@spring.message "om.orderStatus"/>',
-                width: 120
+                width: 120,
+                template:function (rowData) {
+                    var v = rowData.orderStatus;
+                    $.each(statusType, function (i, n) {
+                        if ((n.value || '').toLowerCase() == (v || '').toLowerCase()) {
+                            v = n.meaning;
+                            return v;
+                        }
+                    });
+                    return v;
+                }
             },
             {
                 field:"orderTotalAmount",
@@ -180,10 +195,7 @@
     $("#companyId").kendoLov(${lovProvider.getLov(base.contextPath, base.locale,"LOV_ORG_COMPANY")});
     $("#customerId").kendoLov(${lovProvider.getLov(base.contextPath, base.locale,"LOV_AR_CUSTOMER")});
     $("#inventoryItemId").kendoLov(${lovProvider.getLov(base.contextPath, base.locale,"LOV_INV_INVENTORY")});
-    /*$("#orderNumber").kendoAutoComplete({
-        dataTextField: "orderNumber",
-        dataSource: dataSource
-    });*/
+
     //编辑
     function editFunctionResources(headerId) {
         var editwin = $("#editWin").kendoWindow({
@@ -220,6 +232,7 @@
         }).data("kendoWindow");
         editWin.center().open();
     };
+
 
 </script>
 </body>

@@ -1,5 +1,8 @@
 <#include "../include/header.html">
+<script src="${base.contextPath}/common/code?orderStatusData=HAP_OM_ORDER_STATUS" type="text/javascript"></script>
 <script type="text/javascript">
+    //如果是修改 请求当前Item数据
+    var headerId = '${RequestParameters.headerId!0}';
     var viewModel = Hap.createGridViewModel("#grid",{
         model: {
             headerId: 0
@@ -9,39 +12,7 @@
         ORDER_STATUS_APPROVED: 'APPROVED',
         ORDER_STATUS_REJECTED: 'REJECTED',
         isEnabled: true,
-        create:function () {
-            if(viewModel.model.orderStatus === viewModel.ORDER_STATUS_SUBMITED || viewModel.model.orderStatus === viewModel.ORDER_STATUS_APPROVED){
-                return false;
-            }
 
-            if (viewModel.model.headerId === 0) {
-                kendo.ui.showErrorDialog({
-                    message: '<@spring.message "OrderLine.needHeader" />'
-                });
-            } else {
-                $('#grid').data('kendoGrid').addRow();
-            }
-        },
-        save:function () {
-            if(viewModel.model.orderStatus === viewModel.ORDER_STATUS_SUBMITED || viewModel.model.orderStatus === viewModel.ORDER_STATUS_APPROVED){
-                return false;
-            }
-
-            if(viewModel.model.headerId === 0){
-                kendo.ui.showErrorDialog({
-                    message: '<@spring.message "OrderLine.needHeader" />'
-                });
-            } else{
-                var data = dataSource.data();
-                //只有新增或修改后才能保存
-                for(var idx = 0; idx < data.length; idx++) {
-                    if (data[idx].isNew() || data[idx].dirty) {
-                        grid.saveChanges();
-                        break;
-                    }
-                }
-            }
-        },
         remove: function () {
             Hap.deleteGridSelection({
                 grid: $('#grid')
@@ -74,6 +45,10 @@
                             });
 
                             viewModel.setStatus();
+                            //刷新父页面
+                            parent.location.reload();
+                            //关闭窗口
+                            win.close();
                         }else {
                             kendo.ui.showInfoDialog({
                                 type: 'error',
@@ -167,7 +142,6 @@
             if(viewModel.model.orderStatus === viewModel.ORDER_STATUS_SUBMITED || viewModel.model.orderStatus === viewModel.ORDER_STATUS_APPROVED){
                 return false;
             }
-
             kendo.ui.showConfirmDialog({
                 title: '<@spring.message "hap.tip.info"/>',
                 message: '<@spring.message "headerline.confirmDelete"/>'
@@ -182,8 +156,14 @@
                                     type: 'success',
                                     message: $l('hap.tip.success')
                                 });
-                                //关闭当前页
-                                parent.closeTab(viewModel.model.headerId, true);
+                                var parent = window.parent;
+                                if (parent == window) {
+                                    return;
+                                }
+                                //刷新父页面
+                                parent.location.reload();
+                                //关闭窗口
+                                win.close();
                             } else {
                                 kendo.ui.showInfoDialog({
                                     type: 'error',
@@ -195,166 +175,9 @@
                 }
             });
         },
-        print: function () {
-            //使用一个数据源读取所有订单行数据
-            var dataSource = new kendo.data.DataSource({
-                transport: {
-                    read: {
-                        url: BaseUrl + "/hap/om/order/lines/query/all",
-                        type: "POST",
-                        dataType: "json"
-                    },
-                    parameterMap: function (options, type) {
-                        return {
-                            "headerId": viewModel.model.headerId
-                        }
-                    }
-                },
-                batch: true,
-                schema: {
-                    data: 'rows',
-                    total: 'total'
-                }
-            });
-
-            dataSource.fetch().then(function () {
-
-                var template = kendo.template($("#page-template").html());
-
-                var result = template(dataSource.data());
-                $("#main-data").html(result);
-
-                kendo.drawing.drawDOM($("#print-page"))
-                    .then(function(group) {
-
-                        group.options.set("pdf", {
-                            paperSize: "A3",
-                            creator: 'menxiao.wu@hand-china.com',
-                            title: 'Header Order',
-                            date: new Date(),
-                            margin: {
-                                left   : "10mm",
-                                top    : "10mm",
-                                right  : "10mm",
-                                bottom : "10mm"
-                            }
-                        });
-
-                        kendo.drawing.pdf.saveAs(group, "Order Detail.pdf")
-                    });
-            });
-
-//                var draw = kendo.drawing;
-//                var geom = kendo.geometry;
-//
-//                var group = new draw.Group();
-//
-//                group.options.set("pdf", {
-//                    paperSize: "A4",
-//                    creator: 'jiangzhou.bo@hand-china.com',
-//                    title: 'Header Order',
-//                    date: new Date(),
-//                    margin: {
-//                        left   : "10mm",
-//                        top    : "10mm",
-//                        right  : "10mm",
-//                        bottom : "10mm"
-//                    }
-//                });
-//
-//                var title = new draw.Text("·PDFPrint", [0, 0]);
-//                title.options.set('fill', {color: 'red'});
-//                title.options.set('font', "bold 30px Arial '微软雅黑");
-//
-//                group.append(title);
-//
-//
-//
-//
-//                var grid = $("#grid").data("kendoGrid");
-//                var progress = $.Deferred();
-//
-//                kendo.drawing.drawDOM($("#query-form"))
-//                    .done(function(header) {
-//                        group.children.push(header);
-//
-//                        draw.exportPDF(group).done(function(data) {
-//                            kendo.saveAs({
-//                                dataURI: data,
-//                                fileName: "frame.pdf"
-//                            });
-//                        });
-//                    });
-
-
-//                var draw = kendo.drawing;
-//                var geom = kendo.geometry;
-//
-//                var group = new draw.Group();
-//
-//                group.options.set("pdf", {
-//                    paperSize: "A4",
-//                    creator: 'jiangzhou.bo@hand-china.com',
-//                    title: 'Header Order',
-//                    date: new Date(),
-//                    margin: {
-//                        left   : "10mm",
-//                        top    : "10mm",
-//                        right  : "10mm",
-//                        bottom : "10mm"
-//                    }
-//                });
-//
-//                var title = new draw.Text("·PDFPrint", [0, 0]);
-//                title.options.set('fill', {color: 'red'});
-//                title.options.set('font', "bold 30px Arial '微软雅黑");
-//
-//                group.append(title);
-//
-//
-//                var form = kendo.drawing.drawDOM($("#query-form")).done(function (form) {
-//
-//                    group.append(form);
-//                    draw.exportPDF(group, { paperSize: "A4", landscape: true }).done(function(data) {
-//                        kendo.saveAs({
-//                            dataURI: data,
-//                            fileName: "frame.pdf"
-//                        });
-//                    });
-//
-//                });
-
-
-//                var grid = $("#grid").data("kendoGrid");
-//
-//                var draw = kendo.drawing;
-//                var geom = kendo.geometry;
-//
-//                var path = new draw.Path({
-//                    stroke: {
-//                        color: "#9999b6",
-//                        width: 2
-//                    }
-//                });
-//
-//
-//
-//                kendo.drawing.drawDOM($("#form-content"))
-//                    .done(function(header) {
-//
-//                        grid._drawPDF(progress)
-//                            .then(function(root) {
-//                                root.children.unshift(header);
-//                                return kendo.drawing.exportPDF(root, { multiPage: true });
-//                            })
-//                            .done(function(dataURI) {
-//                                kendo.saveAs({
-//                                    dataURI: dataURI,
-//                                    fileName: "test.pdf"
-//                                });
-//                                progress.resolve();
-//                            })
-//                    });
+        print: function(){
+            //调用报表的PDF下载链接
+            window.location = "${base.contextPath}/ureport/pdf?_u=database:order_pdf.ureport.xml&headerId="+headerId+"&lineheaderId="+headerId;
         },
         setStatus: function () {
             //根据状态设置页面样式
@@ -369,7 +192,7 @@
                         $('#saveHeader').removeAttr('disabled');
                         $('#submitOrder').removeAttr('disabled');
 
-                        $('#approval').attr("disabled", 'disabled');
+                        $('#approval').attr('disabled', 'disabled');
                         $('#reject').attr('disabled', 'disabled');
                         $('#deleteAll').removeAttr('disabled');
 
@@ -400,14 +223,14 @@
             }, 0);
         },
         back: function () {
-            parent.closeTab('tab'+viewModel.model.headerId);
+            //刷新父页面
+            parent.location.reload();
+            //关闭窗口
+            win.close();
         }
     });
 
-    //如果是修改 请求当前Item数据
-    var headerId = ${RequestParameters.headerId!0};
-
-    if (headerId !== 0) {
+    if (headerId != 0) {
         Hap.request({
             type: 'GET',
             url: '${base.contextPath}/hap/om/order/headers/query',
@@ -415,7 +238,6 @@
             success: function (results) {
                 if (results.success) {
                     viewModel.set('model', results.rows[0]);
-                    //设置公司名称
                     for(var k in orderStatusData){
                         if(results.rows[0].orderStatus === orderStatusData[k].value){
                             viewModel.model.set('orderStatusMean', orderStatusData[k].meaning);
@@ -430,7 +252,19 @@
         //新增 设置默认值
         viewModel.model.set('orderStatus', viewModel.ORDER_STATUS_NEW);
         viewModel.model.set('orderDate', new Date());
+        viewModel.model.set('orderTotalAmount', 0.0);
+        viewModel.model.set('orderNumber',GenerateID(viewModel.model.headerId));
         viewModel.setStatus();
+        $('#submitOrder').attr('disabled', true);
+        $('#deleteAll').attr('disabled', true);
+        $('#approval').attr('disabled', true);
+        $('#reject').attr('disabled', true);
+    }
+
+    function GenerateID(str) {
+        var pad = "00";
+        str = str +"";
+        return "D-"+pad.substring(0, pad.length - str.length) + str;
     }
 </script>
 <body>
@@ -442,6 +276,7 @@
             </label>
             <div class="col-md-2 col-md-width">
                 <input id="orderNumber" name="orderNumber" class="k-textbox input-width" required maxlength="60"
+                       data-label="<@spring.message 'om.orderNumber'/>"
                        data-bind="value:model.orderNumber,enabled:isEnabled"/>
             </div>
 
@@ -451,10 +286,21 @@
             <div class="col-md-2 col-md-width">
                 <div>
                     <input id="companyId" name="companyId" class="input-width" required
-                           data-label="<@spring.message 'company.companyName'/>"
+                           data-label="<@spring.message 'org.companyName'/>"
                            data-bind="value:model.companyId, text:model.companyName,enabled:isEnabled"/>
                 </div>
             </div>
+            <script>
+                $("#companyId").kendoLov($.extend(${lovProvider.getLov(base.contextPath, base.locale, "LOV_ALL_COMPANY")}, {
+                        query: function (e) {
+                            e.param['enabledFlag'] = 'Y';
+                        },
+                        change: function () {
+                            viewModel.model.set('customerId', null);
+                        }
+                    }
+                ));
+            </script>
             <label class="col-md-1 control-label text-right" for="customerId">
                 <@spring.message "ar.customerName"/>
             </label>
@@ -465,6 +311,18 @@
                            data-bind="value:model.customerId, text:model.customerName,enabled:isEnabled"/>
                 </div>
             </div>
+            <script>
+                $("#customerId").kendoLov($.extend(${lovProvider.getLov(base.contextPath, base.locale, "LOV_CUSTOMER_COM")}, {
+                        query: function (e) {
+                            e.param['enabledFlag'] = 'Y';
+                            var companyLov = $('#companyId').data('kendoLov');
+                            if(companyLov.value()){
+                                e.param['companyId'] = companyLov.value();
+                            }
+                        }
+                    }
+                ));
+            </script>
         </div>
         <div style="clear: both; height: 10px;"></div>
         <div class="form-group" style="margin:10px 0px 0px 0px;">
@@ -473,6 +331,7 @@
             </label>
             <div class="col-md-2 col-md-width">
                 <input id="orderDate" name="orderDate" class="input-width" required
+                       data-label="<@spring.message 'om.orderDate'/>"
                        data-bind="value:model.orderDate,enabled:isEnabled"/>
                 <script>
                     var orderDate = $("#orderDate").kendoDatePicker({
@@ -496,8 +355,8 @@
             </label>
             <div class="col-md-2 col-md-width">
                 <input id="orderTotalAmount" name="orderTotalAmount"
-                       class="k-textbox k-state-disabled input-width"
-                       data-bind="value:model.orderTotalAmount"/>
+                       class="k-textbox k-state-disabled input-width" readonly="readonly"
+                       data-bind="value:model.orderTotalAmount,enabled:isEnabled"/>
             </div>
 
             <label class="col-md-1 control-label text-right" for="orderStatus">
@@ -515,13 +374,14 @@
                             {text: "已拒绝", code: "REJECTED"}],
                         dataTextField: "text",
                         dataValueField: "code",
-                        valuePrimitive: true
+                        valuePrimitive: true,
+                        enabled:false
                     });
                 </script>
             </div>
         </div>
         <div style="clear: both; height: 10px;"></div>
-        <div class="form-group" style="margin:10px 0px 0px 0px;">
+        <div class="form-group" id="OrderHeader" style="margin:10px 0px 0px 0px;">
             <div style="margin-left: 40px;">
                 <div class="col-md-6">
 
@@ -561,7 +421,7 @@
         kendo.bind($('#page-content'), viewModel);
 
         // 验证器
-        var validator = $("#query-form").kendoValidator({
+        var validator = $("#form-content").kendoValidator({
             messages: {
                 required: '<@spring.message "hap.validation.notempty"/>'
             },
@@ -684,10 +544,10 @@
         },
         toolbar:[
             {
-                template: '<span class="btn btn-primary" data-bind="click:create" ><i class="fa fa-plus" style="margin-right:3px;"></i><@spring.message "hap.add" /></span>'
+                template: '<span class="btn btn-primary" onclick="addRow()" ><i class="fa fa-plus" style="margin-right:3px;"></i><@spring.message "hap.add" /></span>'
             },
             {
-                template: '<span class="btn btn-success" data-bind="click:save"><i class="fa fa-save" style="margin-right:3px;"></i><@spring.message "hap.save" /></span>'
+                template: '<span class="btn btn-success" onclick="saveChanges()" ><i class="fa fa-save" style="margin-right:3px;"></i><@spring.message "hap.save" /></span>'
             },
             {
                 template: '<span onclick="deleteGridRow()" class="btn btn-danger"><i class="fa fa-trash" style="margin-right:3px;"></i><@spring.message "hap.delete" /></span>'
@@ -701,47 +561,124 @@
         columns: [
             {
                 field: "lineId",
-                title: '<@spring.message "orderlines.lineid"/>',
-                width: 120
+                title: '<@spring.message "om.lineId"/>',
+                hidden:true
             },
-                    {
-                field: "headerId",
-                title: '<@spring.message "orderlines.headerid"/>',
-                width: 120
-            },
-                    {
+            {
                 field: "lineNumber",
-                title: '<@spring.message "orderlines.linenumber"/>',
-                width: 120
+                title: '<@spring.message "om.lineNumber"/>',
+                width: 60,
+                editor: function (container, options) {
+                    if(MAX_LINE_NUMBER === 0 && !(options.model.lineNumber > 0)){
+                        $.ajax({
+                            url: '${base.contextPath}/hap/om/order/lines/maxline',
+                            type: 'GET',
+                            async: false,
+                            data: {'headerId': viewModel.model.headerId},
+                            success: function (data) {
+                                MAX_LINE_NUMBER = data;
+                            }
+                        });
+                    }
+
+                    $('<input name="'+options.field+'" class="k-textbox k-state-disabled" readonly required/>').appendTo(container);
+
+                    //如果是新增 设置headerId & companyId
+                    if(!options.model.lineNumber){
+                        options.model.set('lineNumber', ++MAX_LINE_NUMBER);
+                        options.model.set('headerId', viewModel.model.headerId);
+                        options.model.set('companyId', viewModel.model.companyId);
+                    }
+                }
             },
-                    {
-                field: "inventoryItemId",
-                title: '<@spring.message "orderlines.inventoryitemid"/>',
-                width: 120
+            {
+                field: "itemCode",
+                title: '<@spring.message "inv.itemcode"/>',
+                width: 120,
+                editor: function (container, options) {
+                    $('<input required name="' + options.field + '"/>')
+                        .appendTo(container)
+                        .kendoLov($.extend(${lovProvider.getLov(base.contextPath, base.locale, "LOV_INVENTORY_ITEM")}, {
+                            textField: 'itemCode',
+                            valueField: 'inventoryItemId',
+                            model: options.model,
+                            query: function (e) {
+                                e.param['orderFlag'] = 'Y';
+                                e.param['enabledFlag'] = 'Y';
+                            },
+                            select: function (e) {
+                                options.model.set('inventoryItemId', e.item['inventoryItemId']);
+                                options.model.set('itemCode', e.item['itemCode']);
+                                options.model.set('itemDescription', e.item['itemDescription']);
+                                options.model.set('orderQuantityUom', e.item['itemUom']);
+                            }
+                        }));
+                },
+
             },
-                    {
-                field: "orderdQuantity",
-                title: '<@spring.message "orderlines.orderdquantity"/>',
-                width: 120
+            {
+                field: "itemDescription",
+                title: '<@spring.message "inv.itemDescription"/>',
+                width: 120,
+                editor: function (container, options) {
+                    $('<input name="'+options.field+'" class="k-textbox k-state-disabled" readonly required/>').appendTo(container);
+                }
             },
-                    {
+            {
                 field: "orderQuantityUom",
-                title: '<@spring.message "orderlines.orderquantityuom"/>',
-                width: 120
+                title: '<@spring.message "inv.itemUom"/>',
+                width: 120,
+                editor: function (container, options) {
+                    $('<input name="'+options.field+'" class="k-textbox k-state-disabled" readonly required/>').appendTo(container);
+                }
             },
-                    {
+            {
+                field: "orderdQuantity",
+                title: '<@spring.message "om.orderdQuantity"/>',
+                width: 120,
+                editor: function (container, options) {
+                    $('<input required name="'+options.field+'"/>')
+                        .appendTo(container).kendoNumericTextBox({
+                        decimals: 0,
+                        min: 1,
+                        step: 1,
+                        change: function(){
+                            var unitSellingPrice = options.model['unitSellingPrice'] ? options.model['unitSellingPrice'] : 0;
+                            var amount = unitSellingPrice * this.value();
+                            options.model.set('totalAmount',  amount.toFixed(2));
+                        }
+                    });
+                }
+            },
+            {
                 field: "unitSellingPrice",
-                title: '<@spring.message "orderlines.unitsellingprice"/>',
-                width: 120
+                title: '<@spring.message "om.unitSellingPrice"/>',
+                width: 120,
+                editor: function (container, options) {
+                    $('<input required name="'+options.field+'"/>')
+                        .appendTo(container).kendoNumericTextBox({
+                        decimals: 5,
+                        min: 0.001,
+                        step: 1,
+                        change: function(){
+                            var quantity = options.model['orderdQuantity'] ? options.model['orderdQuantity'] : 0;
+                            var amount = quantity * this.value();
+                            options.model.set('totalAmount', amount.toFixed(2));
+                        }
+                    });
+                }
             },
-                    {
+            {
+                field: "totalAmount",
+                title: '<@spring.message "om.ordertotalamount"/>',
+                width: 120,
+                editor: function (container, options) {
+                    $('<input name="'+options.field+'" class="k-textbox k-state-disabled" readonly required/>').appendTo(container);
+                }
+            },
+            {
                 field: "description",
-                title: '<@spring.message "orderlines.description"/>',
-                width: 120
-            },
-                    {
-                field: "companyId",
-                title: '<@spring.message "orderlines.companyid"/>',
+                title: '<@spring.message "hap.comment"/>',
                 width: 120
             }
         ],
@@ -810,9 +747,41 @@
         ]
     });
 
-    $("#companyId").kendoLov(${lovProvider.getLov(base.contextPath, base.locale,"LOV_ORG_COMPANY")});
-    $("#customerId").kendoLov(${lovProvider.getLov(base.contextPath, base.locale,"LOV_AR_CUSTOMER")});
+    //添加行
+    function addRow() {
+        if(viewModel.model.orderStatus === viewModel.ORDER_STATUS_SUBMITED || viewModel.model.orderStatus === viewModel.ORDER_STATUS_APPROVED){
+            return false;
+        }
 
+        if (viewModel.model.headerId === 0) {
+            kendo.ui.showErrorDialog({
+                message: '<@spring.message "OrderLine.needHeader" />'
+            });
+        } else {
+            $('#grid').data('kendoGrid').addRow();
+        }
+    }
+    //保存行
+    function saveChanges() {
+        if(viewModel.model.orderStatus === viewModel.ORDER_STATUS_SUBMITED || viewModel.model.orderStatus === viewModel.ORDER_STATUS_APPROVED){
+            return false;
+        }
+
+        if(viewModel.model.headerId === 0){
+            kendo.ui.showErrorDialog({
+                message: '<@spring.message "OrderLine.needHeader" />'
+            });
+        } else{
+            var data = dataSource.data();
+            //只有新增或修改后才能保存
+            for(var idx = 0; idx < data.length; idx++) {
+                if (data[idx].isNew() || data[idx].dirty) {
+                    $("#grid").data('kendoGrid').saveChanges();
+                    break;
+                }
+            }
+        }
+    }
 
     //【主要】页删除
     function deleteGridRow() {
@@ -846,3 +815,4 @@
 </script>
 </body>
 </html>
+

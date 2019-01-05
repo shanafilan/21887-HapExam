@@ -23,13 +23,12 @@
 
     <select id="selectByCondition" resultMap="BaseResultMap" parameterType="com.hand.om.dto.OrderHeaders">
       SELECT <include refid="Base_column_list"/>
-        OC.COMPANY_NUMBER,OC.COMPANY_NAME,AC.CUSTOMER_NUMBER,AC.CUSTOMER_NAME,INVENTORY_ITEM_ID,
-        (SELECT SUM(OL.ORDERD_QUANTITY*OL.UNIT_SELLING_PRICE) FROM hap_om_order_lines OL WHERE OL.HEADER_ID = OH.HEADER_ID)ORDER_TOTAL_AMOUNT
+        OC.COMPANY_NUMBER,OC.COMPANY_NAME,AC.CUSTOMER_NUMBER,AC.CUSTOMER_NAME,
+        (SELECT SUM(ORDERD_QUANTITY*UNIT_SELLING_PRICE) FROM hap_om_order_lines WHERE HEADER_ID=OH.HEADER_ID) ORDER_TOTAL_AMOUNT
         FROM hap_om_order_headers OH
-      LEFT JOIN hap_om_order_lines OL ON OH.HEADER_ID = OL.HEADER_ID
-      LEFT JOIN hap_org_companys OC ON OH.COMPANY_ID = OC.COMPANY_ID
-      LEFT JOIN hap_ar_customers AC ON OH.CUSTOMER_ID = AC.CUSTOMER_ID
-      <where>
+        LEFT JOIN hap_org_companys OC ON OH.COMPANY_ID = OC.COMPANY_ID
+        LEFT JOIN hap_ar_customers AC ON OH.CUSTOMER_ID = AC.CUSTOMER_ID
+        <where>
           <if test="headerId != null">
               AND OH.HEADER_ID = #{headerId}
           </if>
@@ -46,10 +45,79 @@
               AND ORDER_STATUS = #{orderStatus}
           </if>
           <if test="inventoryItemId != null">
-              AND INVENTORY_ITEM_ID = #{inventoryItemId}
+              EXISTS (SELECT 1 FROM hap_om_order_lines OL WHERE OH.HEADER_ID=OL.HEADER_ID AND
+              OL.INVENTORY_ITEM_ID=#{inventoryItemId})
           </if>
       </where>
     </select>
 
+   <!-- <insert id="insertOrderHeaders" parameterType="com.hand.om.dto.OrderHeaders">
+        INSERT INTO hap_om_order_headers
+        <trim prefix="(" suffix=")" suffixOverrides=",">
+            <if test="headerId!=null">
+                HEADER_ID,
+            </if>
+            <if test="orderNumber!=null">
+                ORDER_NUMBER,
+            </if>
+            <if test="companyId!=null">
+                COMPANY_ID,
+            </if>
+            <if test="customerId!=null">
+                CUSTOMER_ID,
+            </if>
+            <if test="orderStatus!=null">
+                ORDER_STATUS,
+            </if>
+            <if test="orderDate!=null">
+                ORDER_DATE,
+            </if>
+        </trim>
+        VALUES
+        <trim prefix="values(" suffix=")" suffixOverrides=",">
+            <if test="headerId!=null">
+                #{headerId},
+            </if>
+            <if test="orderNumber!=null">
+                #{orderNumber},
+            </if>
+            <if test="companyId!=null">
+                #{companyId},
+            </if>
+            <if test="customerId!=null">
+                #{customerId},
+            </if>
+            <if test="orderStatus!=null">
+                #{orderStatus},
+            </if>
+            <if test="orderDate!=null">
+                #{orderDate,jdbcType=DATE},
+            </if>
+        </trim>
+    </insert>
 
+    <update id="updateOrderHeaders" parameterType="com.hand.om.dto.OrderHeaders">
+        UPDATE hap_om_order_headers
+        <set>
+            <if test="headerId!=null">
+                headerId=#{headerId},
+            </if>
+            <if test="orderNumber!=null">
+                orderNumber=#{orderNumber},
+            </if>
+            <if test="companyId!=null">
+                companyId=#{companyId},
+            </if>
+            <if test="customerId!=null">
+                customerId=#{customerId},
+            </if>
+            <if test="orderStatus!=null">
+                orderStatus=#{orderStatus},
+            </if>
+            <if test="orderDate!=null">
+                orderDate=#{orderDate,jdbcType=DATE},
+            </if>
+        </set>
+        WHENEVER headerId=#{headerId}
+    </update>-->
 </mapper>

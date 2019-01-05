@@ -4,11 +4,13 @@ import com.github.pagehelper.PageHelper;
 import com.hand.hap.account.service.IRole;
 import com.hand.hap.account.service.IRoleService;
 import com.hand.hap.core.IRequest;
+import com.hand.hap.core.annotation.StdWho;
 import com.hand.hap.mybatis.common.Criteria;
 import com.hand.hap.system.dto.ResponseData;
 import com.hand.hap.system.service.impl.BaseServiceImpl;
 import com.hand.om.mapper.OrderHeadersMapper;
 import com.hand.om.mapper.OrderLinesMapper;
+import org.apache.cxf.transport.http.Headers;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.MessageSource;
 import org.springframework.stereotype.Service;
@@ -52,7 +54,7 @@ public class OrderHeadersServiceImpl extends BaseServiceImpl<OrderHeaders> imple
             if (!flag){
                 ResponseData responseData = new ResponseData(false);
                 //多语言
-                responseData.setMessage(messageSource.getMessage("exam.noAuth", null, RequestContextUtils.getLocale(request)));
+                responseData.setMessage(messageSource.getMessage("hap.noAuth", null, RequestContextUtils.getLocale(request)));
                 return responseData;
             }
         }
@@ -67,9 +69,9 @@ public class OrderHeadersServiceImpl extends BaseServiceImpl<OrderHeaders> imple
     @Override
     public void remove(OrderHeaders header) {
         //删除行
-        orderLinesMapper.deleteByPrimaryKey(header.getHeaderId());
+        orderLinesMapper.deleteByHeaderId(header.getHeaderId());
         //删除头
-        deleteByPrimaryKey(header);
+        orderHeadersMapper.deleteByPrimaryKey(header);
     }
 
     @Override
@@ -77,4 +79,5 @@ public class OrderHeadersServiceImpl extends BaseServiceImpl<OrderHeaders> imple
     {
         return orderHeadersMapper.select(orderHeader);
     }
+
 }

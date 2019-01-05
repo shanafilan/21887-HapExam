@@ -25,8 +25,6 @@ import java.util.List;
     @ResponseBody
     public ResponseData query(OrderHeaders dto, @RequestParam(defaultValue = DEFAULT_PAGE) int page,
         @RequestParam(defaultValue = DEFAULT_PAGE_SIZE) int pageSize, HttpServletRequest request) {
-        System.out.println("----------------------");
-        System.out.println(dto);
         IRequest requestContext = createRequestContext(request);
         return new ResponseData(service.selectByCondition(requestContext,dto,page,pageSize));
     }
@@ -46,8 +44,8 @@ import java.util.List;
 
     @RequestMapping(value = "/remove")
     @ResponseBody
-    public ResponseData delete(HttpServletRequest request,@RequestBody List<OrderHeaders> dto){
-        service.batchDelete(dto);
+    public ResponseData delete(HttpServletRequest request,@RequestBody OrderHeaders dto){
+        service.remove(dto);
         return new ResponseData();
     }
     /**

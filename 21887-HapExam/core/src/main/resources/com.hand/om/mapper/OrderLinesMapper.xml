@@ -17,15 +17,39 @@
         <result column="ADDITION3" property="addition3" jdbcType="VARCHAR" />
         <result column="ADDITION4" property="addition4" jdbcType="VARCHAR" />
         <result column="ADDITION5" property="addition5" jdbcType="VARCHAR" />
-        <!--<result column="INVENTORY_ITEM_CODE" property="inventoryItemCode" jdbcType="VARCHAR"/>
-        <result column="INVENTORY_ITEM_DESCRIPTION" property="inventoryItemDescription" jdbcType="VARCHAR"/>-->    </resultMap>
+        <result column="ITEM_CODE" property="itemCode" jdbcType="VARCHAR" />
+        <result column="ITEM_DESCRIPTION" property="itemDescription" jdbcType="VARCHAR" />
+    </resultMap>
 
     <sql id="Base_Column_List">
-        LINE_ID,HEADER_ID,LINE_NUMBER,INVENTORY_ITEM_ID,ORDERD_QUANTITY,ORDER_QUANTITY_UOM,UNIT_SELLING_PRICE,DESCRIPTION,COMPANY_ID,ADDITION1,ADDITION2,ADDITION3,ADDITION4,ADDITION5,
+        LINE_ID,HEADER_ID,LINE_NUMBER,ol.INVENTORY_ITEM_ID,ORDERD_QUANTITY,ORDER_QUANTITY_UOM,UNIT_SELLING_PRICE,DESCRIPTION,COMPANY_ID,ADDITION1,ADDITION2,ADDITION3,ADDITION4,ADDITION5
     </sql>
 
+    <select id="selectByLines" parameterType="com.hand.om.dto.OrderLines" resultMap="BaseResultMap">
+        SELECT <include refid="Base_Column_List"/>,
+        it.ITEM_CODE,it.ITEM_DESCRIPTION
+        FROM hap_om_order_lines ol LEFT JOIN
+        hap_inv_inventory_items it
+        ON ol.INVENTORY_ITEM_ID = it.INVENTORY_ITEM_ID
+        <where>
+            <if test="lineId!=null">
+                AND LINE_ID = #{lineId}
+            </if>
+            <if test="headerId!=null">
+                AND HEADER_ID = #{headerId}
+            </if>
+            <if test="inventoryItemId!=null">
+                AND ol.INVENTORY_ITEM_ID = #{inventoryItemId}
+            </if>
+        </where>
+    </select>
+    
     <select id="selectMaxLineNumber" parameterType="Long" resultType="Long">
         SELECT MAX(LINE_NUMBER) FROM hap_om_order_lines WHERE HEADER_ID=#{headerId}
+    </select>
+
+    <select id="selectNextLineId" resultType="Long">
+        SELECT MAX(LINE_ID+1) FROM hap_om_order_lines;
     </select>
 
     <delete id="deleteByHeaderId" parameterType="Long">
