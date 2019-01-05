@@ -368,10 +368,10 @@
                 <script>
                     $("#orderStatus").kendoDropDownList({
                         dataSource: [
-                            {text: "新建", code: "NEW"},
-                            {text: "已提交", code: "SUBMITED"},
-                            {text: "已审批", code: "APPROVED"},
-                            {text: "已拒绝", code: "REJECTED"}],
+                            {text: "<@spring.message 'order.new'/>", code: "NEW"},
+                            {text: "<@spring.message 'order.submited'/>", code: "SUBMITED"},
+                            {text: "<@spring.message 'order.approved'/>", code: "APPROVED"},
+                            {text: "<@spring.message 'order.rejected'/>", code: "REJECTED"}],
                         dataTextField: "text",
                         dataValueField: "code",
                         valuePrimitive: true,
